@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlowShop 演示商城</title>
+  <link rel="stylesheet" href="/demo/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/demo/index.html" aria-label="FlowShop 首页">
+        <span class="brand-mark">F</span>
+        <span class="brand-name">Flow<span>Shop</span></span>
+        <span class="demo-pill">DEMO</span>
+      </a>
+      <nav class="nav">
+        <a href="#products">全部商品</a>
+        <a href="#hero">测试场景</a>
+        <a href="http://localhost:8080/api/public/health" target="_blank" rel="noreferrer">服务状态</a>
+      </nav>
+      <div class="header-actions">
+        <div class="cart-pill" aria-label="购物车">
+          <span class="cart-icon">🛒</span>
+          <span>购物车</span>
+          <b id="cart-count">0</b>
+        </div>
+        <div id="user-badge" class="user-badge" title="当前登录用户">客</div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="hero">
+      <div class="hero-glow glow-one"></div>
+      <div class="hero-glow glow-two"></div>
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="pulse-dot"></span> FLOWTEST DEMO TARGET</div>
+          <h1>让每一次点击，<br><em>都有回响。</em></h1>
+          <p class="hero-sub">
+            这是 FlowTest 内置的可测试站点。登录、搜索、加购、断言与截图，
+            无需外网，一条自然语言用例即可跑通完整链路。
+          </p>
+          <div class="hero-actions">
+            <a href="#products" class="btn btn-primary">开始探索 <span>→</span></a>
+            <button type="button" class="btn btn-ghost" id="show-script">查看自动化用例</button>
+          </div>
+          <div class="hero-stats">
+            <div><b>6</b><span>可测试商品</span></div>
+            <div><b>3</b><span>核心交互</span></div>
+            <div><b>100%</b><span>可断言 DOM</span></div>
+          </div>
+        </div>
+
+        <div class="login-wrap">
+          <div class="login-card" id="login-card">
+            <div class="login-head">
+              <div class="card-kicker">MEMBER ACCESS</div>
+              <h2>登录演示账号</h2>
+              <p>使用 <code>admin / admin123</code> 体验完整流程</p>
+            </div>
+            <form id="login-form" novalidate>
+              <label class="field">
+                <span>用户名</span>
+                <input id="username" name="username" type="text" placeholder="用户名" autocomplete="off">
+              </label>
+              <label class="field">
+                <span>密码</span>
+                <input id="password" name="password" type="password" placeholder="密码" autocomplete="off">
+              </label>
+              <button id="login-btn" class="btn btn-dark btn-block" type="submit">登录</button>
+              <div id="login-message" class="login-message" role="status"></div>
+            </form>
+            <div id="welcome" class="welcome hidden">
+              <div class="welcome-icon">✓</div>
+              <div>
+                <b id="welcome-text">欢迎回来，admin</b>
+                <p>登录态已建立，可以继续搜索与加购。</p>
+              </div>
+              <button type="button" id="logout-btn" class="text-btn">退出登录</button>
+            </div>
+          </div>
+          <div class="login-shadow"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="products-section" id="products">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">CURATED FOR TESTING</div>
+            <h2>精选商品</h2>
+            <p class="section-sub">每个商品都有稳定的 <code>data-testid</code>，适合做点击与断言。</p>
+          </div>
+          <div class="search-bar">
+            <input id="search" type="text" placeholder="搜索商品名称" autocomplete="off">
+            <button id="search-btn" type="button">搜索</button>
+          </div>
+        </div>
+
+        <div class="result-line">
+          <span id="result-text">共 6 件商品</span>
+          <span class="result-hint">提示：试试搜索“机械键盘”或“显示器”</span>
+        </div>
+
+        <div class="product-grid" id="product-grid"></div>
+        <div id="empty-state" class="empty-state hidden">
+          <div class="empty-icon">⌕</div>
+          <h3>没有找到相关商品</h3>
+          <p>换一个关键词试试，例如“键盘”“显示器”“耳机”。</p>
+          <button type="button" class="btn btn-ghost-dark" id="reset-search">清空搜索</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="scenario-band">
+      <div class="container scenario-inner">
+        <div>
+          <div class="section-kicker light">READY TO AUTOMATE</div>
+          <h2>把这段自然语言，交给 FlowTest。</h2>
+          <p>平台会自动编译为步骤、启动 Chrome、逐步截图并验证断言。</p>
+        </div>
+        <button type="button" class="btn btn-light" id="open-studio">
+          打开 AI 用例工坊 <span>↗</span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span>FlowShop · FlowTest 内置演示站点</span>
+      <span>Selenium + Chrome · Vue 3.5 + Spring Boot 3.5</span>
+    </div>
+  </footer>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <div id="script-modal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <div class="section-kicker">NATURAL LANGUAGE TEST</div>
+          <h3>登录 · 搜索 · 加购</h3>
+        </div>
+        <button type="button" class="icon-btn" data-close-modal aria-label="关闭">×</button>
+      </div>
+      <pre class="script-code">打开 /demo/index.html
+断言标题包含 FlowShop
+在 #username 输入 ${demoUser}
+在 #password 输入 ${demoPassword}
+点击 #login-btn
+断言文本包含 欢迎回来，admin
+在 #search 输入 机械键盘
+点击 #search-btn
+断言元素 [data-testid='product-101'] 可见
+点击 [data-testid='add-101']
+断言元素 #cart-count 的值为 1
+截图 登录并加购完成</pre>
+      <div class="modal-foot">
+        <span>此用例已内置在「FlowShop 演示项目」中</span>
+        <button type="button" class="btn btn-dark" data-close-modal>知道了</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/demo/app.js"></script>
+</body>
+</html>

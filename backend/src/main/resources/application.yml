@@ -1,0 +1,58 @@
+server:
+  port: 8080
+  shutdown: graceful
+  compression:
+    enabled: true
+
+spring:
+  application:
+    name: flowtest
+  datasource:
+    url: jdbc:h2:file:./data/flowtest;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+flowtest:
+  jwt:
+    secret: ${FLOWTEST_JWT_SECRET:FlowTest-Demo-Secret-Key-2026-Please-Change-In-Production-8f3c1a}
+    ttl-hours: 24
+  storage:
+    root: ${FLOWTEST_STORAGE_ROOT:./data}
+  engine:
+    max-parallel: ${FLOWTEST_MAX_PARALLEL:3}
+    default-timeout-seconds: 20
+    browser-binary: ${FLOWTEST_CHROME_BINARY:/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}
+  llm:
+    enabled: ${FLOWTEST_LLM_ENABLED:false}
+    base-url: ${FLOWTEST_LLM_BASE_URL:}
+    api-key: ${FLOWTEST_LLM_API_KEY:}
+    model: ${FLOWTEST_LLM_MODEL:gpt-4o-mini}
+  scheduler:
+    scan-ms: 15000
+  demo:
+    seed: ${FLOWTEST_DEMO_SEED:true}
+
+logging:
+  level:
+    root: INFO
+    com.flowtest: INFO
+    org.springframework.security: WARN

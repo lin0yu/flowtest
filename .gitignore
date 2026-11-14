@@ -1,0 +1,35 @@
+# ---- 依赖 ----
+node_modules/
+
+# ---- 构建产物 ----
+backend/target/
+frontend/dist/
+
+# ---- 运行时数据（数据库、产物、截图、上传、日志）----
+backend/data/
+data/
+*.log
+*.pid
+
+# ---- 报告输出 ----
+flowtest-reports/
+reports/
+nltest/reports/
+
+# ---- Maven 本地依赖缓存（clone 后会自动下载）----
+tools/m2repo/
+
+# ---- 技术选型探针（非交付代码）----
+tools/playwright-probe/
+tools/selenium-probe/
+
+# ---- 密钥 / 环境 ----
+.env
+*.env
+!.env.example
+
+# ---- 系统 / 编辑器 ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,18 @@
+{
+  "name": "flowtest-nl",
+  "version": "1.0.0",
+  "description": "纯 Node CLI：自然语言生成 Web 自动化用例，驱动本机 Chrome 执行，逐步截图并生成 HTML 报告",
+  "type": "module",
+  "bin": {
+    "nltest": "./index.mjs"
+  },
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "playwright-core": "1.48.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
