@@ -114,6 +114,7 @@ async function readStdin() {
 function cliOverrides(args) {
   const o = {}
   if (args.llmBaseUrl) o['llm.baseUrl'] = args.llmBaseUrl
+  if (args.proxy) o['llm.proxyUrl'] = args.proxy
   if (args.model) o['llm.model'] = args.model
   if (args.apiKey) o['llm.apiKey'] = args.apiKey
   if (args.llm) o['llm.enabled'] = true

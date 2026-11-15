@@ -7,6 +7,9 @@ export const DEFAULT_CONFIG = {
   app: {
     baseUrl: ''
   },
+  proxy: {
+    url: ''
+  },
   llm: {
     enabled: false,
     baseUrl: 'https://api.openai.com/v1',
@@ -47,6 +50,7 @@ export const DEFAULT_CONFIG = {
 
 const ENV_MAP = [
   ['NLTEST_APP_URL', 'app.baseUrl', 'string'],
+  ['NLTEST_PROXY', 'proxy.url', 'string'],
   ['NLTEST_LLM_ENABLED', 'llm.enabled', 'bool'],
   ['NLTEST_LLM_BASE_URL', 'llm.baseUrl', 'string'],
   ['NLTEST_LLM_MODEL', 'llm.model', 'string'],

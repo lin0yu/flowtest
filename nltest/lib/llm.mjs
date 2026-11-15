@@ -1,8 +1,24 @@
 // OpenAI 兼容的 LLM 客户端 + 自然语言编译 + 用例批量生成
 // 端点全部来自配置（llm.baseUrl / llm.model / llm.apiKey），连不上时由调用方回退规则引擎
+import { ProxyAgent, setGlobalDispatcher } from 'undici'
 import { SUPPORTED_ACTIONS, NEEDS_SELECTOR, NEEDS_VALUE } from './compiler.mjs'
 
+let proxyApplied = ''
+
+/** Node 的 fetch 不读 http_proxy 环境变量，需要显式设置全局 dispatcher */
+export function applyProxy(proxyUrl) {
+  const url = String(proxyUrl || '').trim()
+  if (!url || url === proxyApplied) return
+  try {
+    setGlobalDispatcher(new ProxyAgent(url))
+    proxyApplied = url
+  } catch (error) {
+    throw new Error(`代理配置失败（${url}）：${error.message}`)
+  }
+}
+
 export async function listModels(llm) {
+  applyProxy(llm.proxyUrl)
   const url = `${trimSlash(llm.baseUrl)}/models`
   let res
   try {
@@ -22,6 +38,7 @@ export async function listModels(llm) {
 }
 
 export async function chatCompletion(llm, messages, { temperature, maxTokens, jsonMode } = {}) {
+  applyProxy(llm.proxyUrl)
   const url = `${trimSlash(llm.baseUrl)}/chat/completions`
   const body = {
     model: llm.model,

@@ -189,6 +189,26 @@ export FLOWTEST_REPORT_DIR=./reports
 
 CLI 退出码：`0` 表示执行通过，`1` 表示执行失败/异常/取消，或调用出错。适合直接接入 CI。
 
+## 代理与网络（每台机器不同，可配置）
+
+仓库内置 `proxy.sh`，换网络/换公司时一条命令即可，不需要改任何代码：
+
+```bash
+cd flowtest
+
+./proxy.sh auto                         # 自动探测：直连能用就直连，不能就用代理
+./proxy.sh set http://127.0.0.1:33210   # 手动设置代理（写入 .proxyrc + 应用到本仓库 git）
+./proxy.sh off                          # 关闭代理（清除 git 配置）
+./proxy.sh test                         # 同时测试直连与代理，给出建议
+./proxy.sh env                          # 输出 export 语句，配合 eval 使用
+./proxy.sh npm on                       # 让本项目的 npm 也走代理（写入 .npmrc）
+```
+
+`.proxyrc` 与 `.npmrc` 属于本机配置，已在 `.gitignore` 中，不会提交。
+
+> Node 的 `fetch` 不认 `http_proxy` 环境变量，所以 LLM 走代理要在配置里单独指定：
+> `nltest.config.json` → `"proxy": { "url": "http://127.0.0.1:33210" }`，或命令行 `--proxy http://…`。
+
 ## 外部自动化调用
 
 1. 在 **系统设置 → API 密钥** 创建密钥（完整密钥只显示一次）。

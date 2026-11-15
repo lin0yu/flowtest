@@ -95,6 +95,7 @@ open reports/demo/report.html
 | `--llm` | 启用 LLM 编译/生成（也可用配置文件 `llm.enabled`） |
 | `--model <名字>` | 模型名 |
 | `--llm-base-url <地址>` | OpenAI 兼容端点，如 `http://127.0.0.1:8788/v1` |
+| `--proxy <地址>` | LLM 请求走代理（Node 的 fetch 不认 http_proxy 环境变量，需单独指定） |
 | `--api-key <key>` | API Key |
 | `--context-url <地址>` | 编译前抓该页面的真实元素，交给模型挑更准的选择器 |
 | `--config <路径>` | 指定配置文件 |
@@ -106,6 +107,7 @@ open reports/demo/report.html
 ```json
 {
   "app": { "baseUrl": "" },
+  "proxy": { "url": "" },
   "llm": {
     "enabled": false,
     "baseUrl": "http://127.0.0.1:8788/v1",
@@ -119,7 +121,7 @@ open reports/demo/report.html
 }
 ```
 
-环境变量覆盖：`NLTEST_APP_URL`、`NLTEST_LLM_ENABLED`、`NLTEST_LLM_BASE_URL`、`NLTEST_LLM_MODEL`、`NLTEST_LLM_API_KEY`、`NLTEST_HEADLESS`、`NLTEST_TIMEOUT`、`NLTEST_REPORT_DIR`、`NLTEST_REPORT_FORMATS`。
+环境变量覆盖：`NLTEST_APP_URL`、`NLTEST_PROXY`、`NLTEST_LLM_ENABLED`、`NLTEST_LLM_BASE_URL`、`NLTEST_LLM_MODEL`、`NLTEST_LLM_API_KEY`、`NLTEST_HEADLESS`、`NLTEST_TIMEOUT`、`NLTEST_REPORT_DIR`、`NLTEST_REPORT_FORMATS`。
 
 ## 自然语言语法
 

@@ -10,7 +10,8 @@
     "start": "node index.mjs"
   },
   "dependencies": {
-    "playwright-core": "1.48.2"
+    "playwright-core": "1.48.2",
+    "undici": "^5.29.0"
   },
   "engines": {
     "node": ">=18"

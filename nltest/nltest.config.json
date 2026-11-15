@@ -2,6 +2,9 @@
   "app": {
     "baseUrl": ""
   },
+  "proxy": {
+    "url": ""
+  },
   "llm": {
     "enabled": false,
     "baseUrl": "http://127.0.0.1:8788/v1",
@@ -16,7 +19,10 @@
   "browser": {
     "channel": "chrome",
     "headless": true,
-    "viewport": { "width": 1440, "height": 960 },
+    "viewport": {
+      "width": 1440,
+      "height": 960
+    },
     "slowMo": 0,
     "ignoreHttpsErrors": false,
     "acceptDownloads": true,
@@ -31,10 +37,21 @@
   },
   "report": {
     "dir": "reports",
-    "formats": ["html", "json", "md"],
+    "formats": [
+      "html",
+      "json",
+      "md"
+    ],
     "inline": false,
     "screenshot": "each-step",
-    "redact": ["password", "pwd", "passwd", "token", "secret", "apikey"]
+    "redact": [
+      "password",
+      "pwd",
+      "passwd",
+      "token",
+      "secret",
+      "apikey"
+    ]
   },
   "vars": {}
 }
