@@ -7,6 +7,10 @@ export const ACTION_LABELS = {
   fill: '输入',
   press: '按键',
   select: '选择',
+  selectDropdown: '选择下拉',
+  pickDate: '选择日期',
+  hoverClick: '悬停后点击',
+  assertDropdownContains: '断言下拉',
   hover: '悬停',
   check: '勾选',
   uncheck: '取消勾选',
@@ -41,13 +45,15 @@ export const ACTION_LABELS = {
 export const SUPPORTED_ACTIONS = Object.keys(ACTION_LABELS)
 
 export const NEEDS_SELECTOR = new Set([
-  'click', 'fill', 'press', 'select', 'hover', 'check', 'uncheck', 'scroll', 'waitFor',
+  'click', 'fill', 'press', 'select', 'selectDropdown', 'pickDate', 'hoverClick',
+  'check', 'uncheck', 'scroll', 'waitFor',
   'upload', 'download', 'dblclick', 'drag', 'iframe', 'switchFrame', 'extract',
   'assertVisible', 'assertHidden', 'assertValue', 'assertCount', 'assertAttribute', 'assertNetwork'
 ])
 
 export const NEEDS_VALUE = new Set([
-  'goto', 'fill', 'press', 'select', 'wait', 'upload', 'download', 'drag',
+  'goto', 'fill', 'press', 'select', 'selectDropdown', 'pickDate', 'hoverClick', 'assertDropdownContains',
+  'wait', 'upload', 'download', 'drag',
   'switchTab', 'newTab', 'extract',
   'assertText', 'assertTitle', 'assertUrl', 'assertValue', 'assertCount', 'assertAttribute', 'assertNetwork'
 ])
@@ -141,10 +147,23 @@ function matchLine(line) {
   m = line.match(/^在\s*(.+?)\s*(?:输入|填写|键入)\s*(.+)$/)
   if (m) return { action: 'fill', selector: m[1].trim(), value: m[2].trim() }
 
+  // ===== Element Plus 复合组件（必须早于通用 select 规则）=====
+  m = line.match(/^选择下拉\s*(.+?)\s*为\s*[:：]?\s*(.+)$/)
+  if (m) return { action: 'selectDropdown', selector: m[1].trim(), value: m[2].trim() }
+
+  m = line.match(/^选择日期\s*(.+?)\s*为\s*[:：]?\s*(.+)$/)
+  if (m) return { action: 'pickDate', selector: m[1].trim(), value: m[2].trim() }
+
+  m = line.match(/^悬停后点击\s*(.+?)\s+(.+)$/)
+  if (m) return { action: 'hoverClick', selector: m[1].trim(), value: m[2].trim() }
+
+  m = line.match(/^断言下拉\s*(?:包含|含有|有)\s*(.+)$/)
+  if (m) return { action: 'assertDropdownContains', selector: null, value: m[1].trim() }
+
   m = line.match(/^(?:选择|select)\s*(?:下拉(?:框|列表)?\s*)?(.+?)\s*(?:为|选择|选)\s*[:：]?\s*(.+)$/i)
   if (m) return { action: 'select', selector: m[1].trim(), value: m[2].trim() }
 
-  m = line.match(/^(?:上传|upload)\s*(.+?)\s*(?:文件)?\s*[:：]?\s*(.+)$/i)
+  m = line.match(/^(?:上传|upload)\s*(.+?)\s*(?:文件)?\s*[:：]?\s*((?:[a-zA-Z]:)?[\\/][^\s]+)$/i)
   if (m) return { action: 'upload', selector: m[1].trim(), value: m[2].trim() }
 
   m = line.match(/^(?:下载)\s*(.+)$/)
@@ -224,6 +243,10 @@ export function renderStepsToNl(steps) {
       case 'fill': return `在 ${sel} 输入 ${val}`
       case 'press': return `按键 ${val}`
       case 'select': return `选择 ${sel} 为 ${val}`
+      case 'selectDropdown': return `选择下拉 ${sel} 为 ${val}`
+      case 'pickDate': return `选择日期 ${sel} 为 ${val}`
+      case 'hoverClick': return `悬停后点击 ${sel} ${val}`
+      case 'assertDropdownContains': return `断言下拉包含 ${val}`
       case 'hover': return `悬停 ${sel}`
       case 'check': return `勾选 ${sel}`
       case 'uncheck': return `取消勾选 ${sel}`

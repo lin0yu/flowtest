@@ -144,10 +144,11 @@ const COMPILE_SYSTEM = `你是资深 Web 自动化测试工程师，负责把中
 }
 
 可用 action：
-goto click fill press select hover check uncheck scroll wait waitFor upload download
-dblclick drag iframe switchFrame switchTab newTab closeTab refresh goBack goForward
+goto click fill press select selectDropdown pickDate hoverClick check uncheck scroll wait waitFor
+upload download dblclick drag iframe switchFrame switchTab newTab closeTab refresh goBack goForward
 extract screenshot
-assertText assertTitle assertUrl assertVisible assertHidden assertValue assertCount assertAttribute assertNetwork
+assertText assertTitle assertUrl assertVisible assertHidden assertValue assertCount assertAttribute
+assertNetwork assertDropdownContains
 
 规则：
 1. selector 优先用稳定的 CSS / id / data-testid；没有稳定标识时用 text=可见文字（按钮、菜单、选项都可以）。
@@ -158,6 +159,16 @@ assertText assertTitle assertUrl assertVisible assertHidden assertValue assertCo
 5. 账号密码等用 \${变量} 占位，不要写明文。
 6. 关键业务结果必须补断言（assertVisible / assertText / assertValue）。
 7. 不要编造页面元素；信息不足时用最通用的选择器，并在 description 里写明假设。
+7.1 Element Plus 等组件库优先用可见文字定位（text=），其次用组件类名；
+    Element Plus 2.14 起类名为新版 BEM（如 el-upload-dragger），旧版为 el-upload__dragger。
+8. 组件库复合交互请用专用动作，不要拆成多步：
+    选择下拉：{"action":"selectDropdown","selector":"#stage","value":"样机阶段"}
+    选择日期：{"action":"pickDate","selector":"#date","value":"2026-11-15"}
+    悬停菜单：{"action":"hoverClick","selector":"#more","value":"批量操作"}
+    表格行内按钮：{"action":"click","selector":"row=张三 | text=编辑"}
+    表格行某列取值：{"action":"assertValue","selector":"row=张三 | col=状态","value":"已审核"}
+9. 接口断言可同时校验响应体字段：
+    {"action":"assertNetwork","selector":"/api/order/save","value":"200|body.code=0"}
 ${contextBlock}`
 
 function contextBlock(context) {
@@ -244,7 +255,8 @@ const GENERATE_SYSTEM = `你是资深测试设计专家。根据用户给出的�
 1. 覆盖维度要多样：正向主流程、异常/边界输入、权限/角色、数据一致性、状态流转。
 2. 每条用例步骤控制在 15 步以内，必须可执行（不能是"检查系统是否正常"这种空话）。
 3. selector 用稳定 CSS 或 text=可见文字；账号密码用 \${变量} 占位。
-4. 关键结果要有断言。
+4. 关键结果要有断言；涉及下拉/日期/悬停菜单时优先使用 selectDropdown / pickDate / hoverClick。
+   表格行内操作使用 "row=关键字 | text=按钮文字" 形式。
 5. file 用简短英文/中文短语，不要空格。`
 
 export async function generateCases(llm, { requirement, count = 6, module = '' }) {

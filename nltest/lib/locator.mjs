@@ -15,7 +15,18 @@ export function splitCandidates(selector) {
  */
 export function resolveLocator(page, selector, scope) {
   const root = scope || page
-  for (const candidate of splitCandidates(selector)) {
+  const whole = String(selector || '').trim()
+  // 1) 整体解析（支持 row=关键字 | text=按钮 这种组合写法）
+  if (whole) {
+    try {
+      const locator = buildLocator(root, whole)
+      if (locator) return { locator, candidate: whole }
+    } catch {
+      // 不是整体合法的表达式，落到多候选
+    }
+  }
+  // 2) 多候选降级：用 | 分隔，逐个尝试
+  for (const candidate of splitCandidates(whole)) {
     try {
       const locator = buildLocator(root, candidate)
       if (locator) return { locator, candidate }
@@ -75,10 +86,10 @@ export function resolveFrame(page, frameSelector) {
  * 需要先根据表头文字找到列索引，再取该行对应单元格
  */
 export async function resolveRowColumn(page, selector) {
-  const candidates = splitCandidates(selector)
-  const target = candidates.find((c) => /^row=/i.test(c) && /\|\s*col=/i.test(c))
-  if (!target) return null
-  const [, rowKeyword, colName] = target.match(/^row=(.+?)\s*\|\s*col=(.+)$/i)
+  const target = String(selector || '').trim()
+  const match = target.match(/^row=(.+?)\s*\|\s*col=(.+)$/i)
+  if (!match) return null
+  const [, rowKeyword, colName] = match
   const row = page.locator('tr').filter({ hasText: rowKeyword.trim() }).first()
   if (await row.count() === 0) return null
 

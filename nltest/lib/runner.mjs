@@ -81,7 +81,8 @@ export async function runCase(browser, options) {
     frame: null,
     network: [],
     consoleErrors: [],
-    downloads: []
+    downloads: [],
+    popups: []
   }
 
   const page = await context.newPage()
@@ -96,9 +97,26 @@ export async function runCase(browser, options) {
   page.on('pageerror', (err) => {
     state.consoleErrors.push(String(err?.message || err).slice(0, 500))
   })
-  page.on('response', (res) => {
-    state.network.push({ url: res.url(), method: res.request().method(), status: res.status(), ok: res.ok() })
+  page.on('response', async (res) => {
+    const record = { url: res.url(), method: res.request().method(), status: res.status(), ok: res.ok() }
+    try {
+      const contentType = res.headers()['content-type'] || ''
+      if (contentType.includes('json')) record.body = await res.json()
+    } catch {
+      // body 不可读时忽略
+    }
+    state.network.push(record)
     if (state.network.length > 500) state.network.shift()
+  })
+
+  // window.open / target=_blank 打开的新窗口：自动接管为当前页面
+  context.on('page', (opened) => {
+    if (state.pages.includes(opened)) return
+    state.pages.push(opened)
+    state.current = opened
+    opened.setDefaultTimeout(timeoutSeconds * 1000)
+    opened.setDefaultNavigationTimeout(navigationTimeoutSeconds * 1000)
+    state.popups.push(opened)
   })
   page.on('dialog', async (dialog) => {
     state.consoleErrors.push(`[dialog] ${dialog.type()}: ${dialog.message()}`)
@@ -292,6 +310,92 @@ async function execStep(state, step, ctx) {
       }
       return `已选择 ${value}`
     }
+    case 'selectDropdown': {
+      const { locator } = await locate()
+      const tagName = await locator.evaluate((el) => el.tagName.toLowerCase()).catch(() => '')
+      if (tagName === 'select') {
+        try {
+          await locator.selectOption({ label: value }, { timeout: t })
+        } catch {
+          await locator.selectOption(value, { timeout: t })
+        }
+        return `已选择 ${value}`
+      }
+      // Element Plus 下拉：点开容器 → 在弹出的面板里按文字选
+      // 不同版本内部结构不同：el-select__wrapper → el-input__wrapper → input → 根元素
+      const clickTargets = [
+        locator.locator('.el-select__wrapper, .el-input__wrapper').first(),
+        locator.locator('input').first(),
+        locator
+      ]
+      let opened = false
+      for (const target of clickTargets) {
+        const count = await target.count().catch(() => 0)
+        if (!count) continue
+        const visible = await target.first().isVisible().catch(() => false)
+        if (!visible) continue
+        await target.first().click({ timeout: t })
+        opened = true
+        break
+      }
+      if (!opened) throw new Error(`无法点击下拉控件：${selector}`)
+      await sleep(250)
+      const item = page.locator(
+        '.el-select-dropdown__item:visible, .el-select__popper li:visible, .el-dropdown-menu__item:visible'
+      ).filter({ hasText: value }).first()
+      if (await item.count() === 0) {
+        throw new Error(`下拉面板中没有找到「${value}」`)
+      }
+      await item.click({ timeout: t })
+      return `已选择下拉项 ${value}`
+    }
+    case 'pickDate': {
+      const { locator } = await locate()
+      const inner = locator.locator('input').first()
+      const hasInnerInput = await inner.count().catch(() => 0)
+      await (hasInnerInput > 0 ? inner : locator).click({ timeout: t })
+      await sleep(250)
+      const panel = page.locator('.el-picker-panel:visible, .el-date-picker:visible, .el-popper:visible').last()
+      await panel.waitFor({ state: 'visible', timeout: t })
+      let cell = panel.getByText(value, { exact: true }).first()
+      if (await cell.count() === 0) {
+        cell = panel.locator('td, span, div').filter({ hasText: value }).first()
+      }
+      await cell.click({ timeout: t })
+      return `已选择日期 ${value}`
+    }
+    case 'hoverClick': {
+      const { locator } = await locate()
+      const trigger = locator.locator('.el-dropdown__trigger, .trigger, button, [role=button]').first()
+      const hasTrigger = await trigger.count().catch(() => 0)
+      await (hasTrigger > 0 ? trigger : locator).hover({ timeout: t })
+      await sleep(350)
+      const menu = page.locator('.el-dropdown-menu:visible, .el-popper:visible, .el-menu:visible').last()
+      let target = menu.getByText(value, { exact: false }).first()
+      if (await menu.count() === 0 || await target.count() === 0) {
+        target = page.getByText(value, { exact: false }).last()
+      }
+      await target.click({ timeout: t })
+      return `已悬停后点击 ${value}`
+    }
+    case 'assertDropdownContains': {
+      const deadline = Date.now() + t
+      let panelText = ''
+      while (Date.now() < deadline) {
+        const panel = page.locator(
+          '.el-select-dropdown:visible, .el-popper:visible, .el-dropdown-menu:visible'
+        ).last()
+        if (await panel.count() > 0) {
+          panelText = await panel.innerText().catch(() => '')
+          if (panelText.includes(value)) return `断言通过：下拉面板包含 ${value}`
+        } else {
+          panelText = await page.evaluate(() => document.body ? document.body.innerText : '')
+          if (panelText.includes(value)) return `断言通过：页面包含 ${value}`
+        }
+        await sleep(200)
+      }
+      throw assertError(`下拉面板未包含「${value}」`, value, String(panelText).slice(0, 300))
+    }
     case 'hover': {
       const { locator } = await locate()
       await locator.hover({ timeout: t })
@@ -326,7 +430,28 @@ async function execStep(state, step, ctx) {
     }
     case 'upload': {
       const { locator } = await locate()
-      await locator.setInputFiles(value, { timeout: t })
+      const isFileInput = await locator
+        .evaluate((el) => el.tagName === 'INPUT' && el.type === 'file')
+        .catch(() => false)
+      if (isFileInput) {
+        await locator.setInputFiles(value, { timeout: t })
+        return `已上传文件 ${value}`
+      }
+      // 优先使用真实 file input（自身 → 内部 → 最近祖先），Element Plus 的隐藏 input 会被自动触发 change
+      const innerInput = locator.locator('input[type=file]').first()
+      if (await innerInput.count().catch(() => 0) > 0) {
+        await innerInput.setInputFiles(value, { timeout: t })
+        return `已上传文件 ${value}`
+      }
+      const ancestorInput = locator.locator(
+        'xpath=ancestor-or-self::*[.//input[@type="file"]][1]//input[@type="file"]'
+      ).first()
+      if (await ancestorInput.count().catch(() => 0) > 0) {
+        await ancestorInput.setInputFiles(value, { timeout: t })
+        return `已上传文件 ${value}`
+      }
+      // 实在没有 file input（如自定义拖拽区）：派发 HTML5 drag/drop 事件
+      await dispatchDrop(locator, value)
       return `已上传文件 ${value}`
     }
     case 'download': {
@@ -462,30 +587,91 @@ async function execStep(state, step, ctx) {
       return `断言通过：${selector} 的 ${attrName} 包含 ${expected}`
     }
     case 'assertNetwork': {
-      const expected = Number(value)
+      // 格式：200 | 200|body.code=0 | 200|code=0|message=成功
+      const parts = String(value).split('|').map((p) => p.trim()).filter(Boolean)
+      const expectedStatus = Number(parts[0] || 200)
+      const checks = parts.slice(1).map((part) => {
+        const idx = part.indexOf('=')
+        if (idx < 0) return { path: part, expected: undefined }
+        return { path: part.slice(0, idx), expected: part.slice(idx + 1) }
+      })
       const deadline = Date.now() + t
       let matched = null
       while (Date.now() < deadline) {
         matched = state.network
           .filter((r) => r.url.includes(selector))
           .reverse()
-          .find((r) => r.status === expected)
-        if (matched) break
+          .find((r) => r.status === expectedStatus)
+        if (matched && checks.every((c) => checkField(matched, c))) break
+        matched = matched && checks.every((c) => checkField(matched, c)) ? matched : null
         await sleep(200)
       }
       if (!matched) {
         const last = state.network.filter((r) => r.url.includes(selector)).slice(-1)[0]
+        const detail = checks.length
+          ? checks.map((c) => `${c.path}=${c.expected ?? '(存在)'} → ${JSON.stringify(pickField(last, c.path))}`).join('; ')
+          : '（未校验响应体字段）'
         throw assertError(
-          `接口 ${selector} 未出现状态码 ${expected}`,
-          String(expected),
-          last ? `${last.method} ${last.url} → ${last.status}` : '未捕获到该请求'
+          `接口 ${selector} 未满足断言（期望状态码 ${expectedStatus}）`,
+          String(value),
+          last ? `${last.method} ${last.url} → ${last.status}；${detail}` : '未捕获到该请求'
         )
       }
-      return `断言通过：接口 ${matched.method} ${matched.url} 返回 ${matched.status}`
+      const extra = checks.length
+        ? `，响应体 ${checks.map((c) => `${c.path}=${JSON.stringify(pickField(matched, c.path))}`).join(', ')}`
+        : ''
+      return `断言通过：接口 ${matched.method} ${matched.url} 返回 ${matched.status}${extra}`
     }
     default:
       throw new Error(`不支持的动作：${step.action}`)
   }
+}
+
+function pickField(record, rawPath) {
+  if (!record) return undefined
+  const path = String(rawPath || '').replace(/^body\.?/i, '').replace(/^\./, '')
+  if (!path) return record.body
+  let cur = record.body
+  for (const key of path.split('.')) {
+    if (cur === null || cur === undefined) return undefined
+    cur = cur[key]
+  }
+  return cur
+}
+
+function checkField(record, check) {
+  const actual = pickField(record, check.path)
+  if (actual === undefined) return false
+  if (check.expected === undefined) return true
+  return String(actual) === String(check.expected)
+}
+
+async function dispatchDrop(locator, filePath) {
+  const absolute = path.resolve(filePath.replace(/^~(?=\/)/, process.env.HOME || '~'))
+  const buffer = await fs.readFile(absolute)
+  const name = path.basename(absolute)
+  const type = guessMime(name)
+  await locator.evaluate((el, payload) => {
+    const transfer = new DataTransfer()
+    const file = new File([new Uint8Array(payload.bytes)], payload.name, { type: payload.type })
+    transfer.items.add(file)
+    for (const eventName of ['dragenter', 'dragover', 'drop']) {
+      const event = new DragEvent(eventName, { bubbles: true, cancelable: true, dataTransfer: transfer })
+      el.dispatchEvent(event)
+    }
+  }, { name, type, bytes: Array.from(buffer) })
+}
+
+function guessMime(name) {
+  const ext = path.extname(name).toLowerCase()
+  const map = {
+    '.pdf': 'application/pdf', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif', '.txt': 'text/plain', '.csv': 'text/csv', '.json': 'application/json',
+    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    '.zip': 'application/zip'
+  }
+  return map[ext] || 'application/octet-stream'
 }
 
 function assertError(message, expected, actual) {

@@ -155,6 +155,13 @@ open reports/demo/report.html
 断言元素 .item 的数量为 3
 断言元素 #btn 的 class 包含 btn-primary
 断言接口 /api/order/save 返回 200
+断言接口 /api/order/save 返回 200|body.code=0|body.data.status=已审核
+
+# Element Plus 复合组件（一步完成，不用手写「点开→点选」）
+选择下拉 #stage 为 样机阶段          # 自动点开下拉并在面板里按文字选
+选择日期 #date 为 2026-11-15        # 自动点开日期面板并选中
+悬停后点击 #more 批量操作            # 自动 hover 后点击菜单项
+断言下拉包含 样机阶段                # 断言当前弹层内含某项
 
 # 表格（按行关键字定位，行内同名按钮不点错）
 点击表格行 张三 的 编辑
@@ -162,6 +169,30 @@ open reports/demo/report.html
 ```
 
 定位写法：`#id`、`.class`、`text=文字`、`placeholder=…`、`aria=…`、`title=…`、`data-testid=…`、`css=…`、`xpath=…`，纯文字自动按 `text=` 处理；多个候选用 `|` 分隔。
+
+## Element Plus 组件支持
+
+工具内置了 Element Plus 常用组件的**一步式操作**，不必手写「点开 → 点选」两步：
+
+| 组件 | 写法 | 说明 |
+| --- | --- | --- |
+| `el-select` / `el-cascader` | `选择下拉 #x 为 选项文字` | 自动点开并按文字选中 |
+| `el-date-picker` / `el-time-picker` | `选择日期 #x 为 2026-11-15` | 自动点开面板并选中 |
+| `el-dropdown`（hover） | `悬停后点击 #more 批量操作` | 自动 hover 后点菜单项 |
+| `el-table` 行内按钮 | `点击表格行 张三 的 编辑` | 按行关键字定位，同名不点错 |
+| `el-table` 某列取值 | `断言元素 表格行 张三 的 状态 列 的值为 已审核` | — |
+| `el-dialog` / `el-drawer` | `点击 text=新增` → 填表 → `点击 text=确定` | 弹层在 body，不在按钮内部 |
+| `el-message` / `el-notification` | `断言文本包含 新增成功` | 提示 1 秒消失，断言要紧跟动作 |
+| `el-upload`（拖拽区） | `上传 .el-upload-dragger /tmp/a.pdf` | 自动使用真实 file input；无 input 时派发 HTML5 drop |
+| `el-switch` / `el-radio` / `el-checkbox` | `点击 text=男` / `.el-switch` | 真实 input 隐藏，点文字或外层 |
+| `el-pagination` | `点击 text=2` | — |
+| `el-loading` / `el-skeleton` / `el-overlay` | `断言元素 .el-loading-mask 隐藏` | 验证加载结束、弹窗关闭 |
+
+> Element Plus **2.14 起使用新版 BEM 类名**：`el-upload-dragger`（旧版为 `el-upload__dragger`）。
+> 定位失败时报告会列出页面上的真实元素与建议选择器，照着改即可。
+
+内置实验页：`http://localhost:5173/element-lab`（覆盖下拉、日期、悬停菜单、消息、对话框、抽屉、表格、上传、开关、单选等），
+配套示例用例在 `examples/element-plus/`。
 
 ## 用例文件
 

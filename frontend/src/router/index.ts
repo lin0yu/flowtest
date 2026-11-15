@@ -13,6 +13,12 @@ const router = createRouter({
       meta: { public: true, title: '登录' }
     },
     {
+      path: '/element-lab',
+      name: 'element-lab',
+      component: () => import('@/views/ElementLabView.vue'),
+      meta: { public: true, title: 'Element Plus 组件实验页' }
+    },
+    {
       path: '/',
       component: () => import('@/layout/AppLayout.vue'),
       children: [

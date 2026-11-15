@@ -141,14 +141,19 @@ cmd_push() {
   local branch="${2:-main}"
   local url="${PROXY_URL:-}"
 
-  local remote_url slug owner auth_url token=""
+  local remote_url owner slug auth_url token=""
   remote_url=$(git -C "$ROOT" remote get-url "$remote" 2>/dev/null || echo "")
   if [ -z "$remote_url" ]; then
     echo "✗ 未找到远程仓库 $remote"
     exit 1
   fi
-  slug="${remote_url##*/}"; slug="${slug%.git}"
-  owner="${slug%%/*}"
+  # 从 https://github.com/<owner>/<repo>.git 或 git@github.com:<owner>/<repo>.git 解析
+  owner=$(printf '%s' "$remote_url" | sed -E 's#^.*github\.com[:/]+([^/]+)/.*#\1#')
+  slug=$(printf '%s' "$remote_url" | sed -E 's#^.*github\.com[:/]+[^/]+/##; s#\.git$##')
+  if [ -z "$owner" ] || [ -z "$slug" ] || [ "$owner" = "$slug" ]; then
+    echo "✗ 无法解析远程地址：$remote_url"
+    exit 1
+  fi
 
   if [ -f "$ROOT/.git-token" ]; then
     token=$(cat "$ROOT/.git-token")
@@ -156,7 +161,7 @@ cmd_push() {
   [ -z "$token" ] && token="${FLOWTEST_GITHUB_TOKEN:-}"
 
   if [ -n "$token" ]; then
-    auth_url="https://${owner}:${token}@github.com/${slug}"
+    auth_url="https://${owner}:${token}@github.com/${owner}/${slug}"
   else
     auth_url="$remote_url"
   fi
