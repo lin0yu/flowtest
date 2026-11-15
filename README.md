@@ -202,9 +202,13 @@ cd flowtest
 ./proxy.sh test                         # 同时测试直连与代理，给出建议
 ./proxy.sh env                          # 输出 export 语句，配合 eval 使用
 ./proxy.sh npm on                       # 让本项目的 npm 也走代理（写入 .npmrc）
+./proxy.sh token <GitHub-Token>         # 保存推送凭据到 .git-token（不提交）
+./proxy.sh push origin main             # 智能推送：自动直连/代理切换 + 3 轮重试
 ```
 
-`.proxyrc` 与 `.npmrc` 属于本机配置，已在 `.gitignore` 中，不会提交。
+`.proxyrc`、`.npmrc`、`.git-token` 属于本机配置，已在 `.gitignore` 中，不会提交。
+
+> 公司网络只要能连 GitHub，`./proxy.sh push` 一条命令即可完成推送：它会先探直连、不通再走你配置的代理，都不通则自动重试三轮。
 
 > Node 的 `fetch` 不认 `http_proxy` 环境变量，所以 LLM 走代理要在配置里单独指定：
 > `nltest.config.json` → `"proxy": { "url": "http://127.0.0.1:33210" }`，或命令行 `--proxy http://…`。

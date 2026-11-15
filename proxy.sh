@@ -124,6 +124,82 @@ cmd_env() {
   echo "export HTTPS_PROXY=$PROXY_URL"
 }
 
+cmd_token() {
+  local t="${1:-}"
+  if [ -z "$t" ]; then
+    echo "用法: ./proxy.sh token <GitHub Personal Access Token>"
+    exit 1
+  fi
+  printf '%s\n' "$t" > "$ROOT/.git-token"
+  chmod 600 "$ROOT/.git-token"
+  echo "✓ 已保存 GitHub token 到 .git-token（不提交，权限 600）"
+}
+
+cmd_push() {
+  load_rc
+  local remote="${1:-origin}"
+  local branch="${2:-main}"
+  local url="${PROXY_URL:-}"
+
+  local remote_url slug owner auth_url token=""
+  remote_url=$(git -C "$ROOT" remote get-url "$remote" 2>/dev/null || echo "")
+  if [ -z "$remote_url" ]; then
+    echo "✗ 未找到远程仓库 $remote"
+    exit 1
+  fi
+  slug="${remote_url##*/}"; slug="${slug%.git}"
+  owner="${slug%%/*}"
+
+  if [ -f "$ROOT/.git-token" ]; then
+    token=$(cat "$ROOT/.git-token")
+  fi
+  [ -z "$token" ] && token="${FLOWTEST_GITHUB_TOKEN:-}"
+
+  if [ -n "$token" ]; then
+    auth_url="https://${owner}:${token}@github.com/${slug}"
+  else
+    auth_url="$remote_url"
+  fi
+
+  # 依次尝试：直连 → 代理，多轮重试（网络可能是间歇性的）
+  local round
+  for round in 1 2 3; do
+    local direct_code
+    direct_code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 https://github.com 2>/dev/null || true)
+    direct_code="${direct_code:-000}"
+    if [ "$direct_code" = "200" ]; then
+      echo "→ [第${round}轮] 直连可用，使用直连推送…"
+      if git -C "$ROOT" -c http.proxy= -c https.proxy= push "$auth_url" "$branch"; then
+        git -C "$ROOT" fetch "$remote" >/dev/null 2>&1 || true
+        echo "✓ 推送完成"
+        return 0
+      fi
+    fi
+
+    if [ -n "$url" ]; then
+      local proxy_code
+      proxy_code=$(curl -x "$url" -s -o /dev/null -w '%{http_code}' --max-time 12 https://github.com 2>/dev/null || true)
+      proxy_code="${proxy_code:-000}"
+      if [ "$proxy_code" = "200" ]; then
+        echo "→ [第${round}轮] 直连不通，改用代理 $url 推送…"
+        if git -C "$ROOT" -c http.proxy="$url" -c https.proxy="$url" push "$auth_url" "$branch"; then
+          git -C "$ROOT" fetch "$remote" >/dev/null 2>&1 || true
+          echo "✓ 推送完成"
+          return 0
+        fi
+      fi
+    fi
+
+    if [ "$round" -lt 3 ]; then
+      echo "→ [第${round}轮] 网络不可用，8 秒后重试…"
+      sleep 8
+    fi
+  done
+
+  echo "✗ 推送失败：网络不通或凭据无效（token 可用 ./proxy.sh token <token> 更新）"
+  exit 1
+}
+
 cmd_npm() {
   load_rc
   local mode="${1:-on}"
@@ -154,8 +230,10 @@ case "${1:-show}" in
   test) shift; cmd_test "$@" ;;
   env) cmd_env ;;
   npm) shift; cmd_npm "$@" ;;
+  token) shift; cmd_token "$@" ;;
+  push) shift; cmd_push "$@" ;;
   *)
-    echo "用法: ./proxy.sh {show|set <地址>|off|auto|test|env|npm on|off}"
+    echo "用法: ./proxy.sh {show|set <地址>|off|auto|test|env|npm on|off|token <tk>|push [remote] [branch]}"
     exit 1
     ;;
 esac

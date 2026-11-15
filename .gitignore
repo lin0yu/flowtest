@@ -37,3 +37,4 @@ Thumbs.db
 # ---- 本机代理配置（每台机器不同，不提交）----
 .proxyrc
 .npmrc
+.git-token
