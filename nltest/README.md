@@ -138,6 +138,7 @@ open reports/demo/report.html
 拖拽 #a 到 #b                        # 拖拽
 等待 2 秒                            # 等待
 等待元素 .loading 消失                # 等待出现/消失
+等待页面文本包含 任务总数               # 等页面真正加载完成（比等元素更稳）
 滚动到 #bottom                       # 滚动
 切换到 iframe #f1                    # 进入 iframe
 切换到标签页 结算                     # 多标签页
@@ -170,6 +171,10 @@ open reports/demo/report.html
 
 定位写法：`#id`、`.class`、`text=文字`、`placeholder=…`、`aria=…`、`title=…`、`data-testid=…`、`css=…`、`xpath=…`，纯文字自动按 `text=` 处理；多个候选用 `|` 分隔。
 
+> 属性类定位（`placeholder=` / `aria=` / `title=` / `data-testid=`）默认**精确匹配**，
+> 避免「请输入任务名称」误命中「请输入任务名称或型号」；需要模糊匹配时用 `placeholder*=` / `aria*=` / `title*=`。
+> `text=` 保持包含匹配（写「新增」可命中「新增任务」）。
+
 ## Element Plus 组件支持
 
 工具内置了 Element Plus 常用组件的**一步式操作**，不必手写「点开 → 点选」两步：
@@ -193,6 +198,18 @@ open reports/demo/report.html
 
 内置实验页：`http://localhost:5173/element-lab`（覆盖下拉、日期、悬停菜单、消息、对话框、抽屉、表格、上传、开关、单选等），
 配套示例用例在 `examples/element-plus/`。
+
+## 配套模拟项目
+
+仓库内附带一个可运行的模拟业务系统 **Radiotech 辐射认证管理平台**（前端 `frontend/src/mock/`），
+用于在没有真实项目时演练整套流程：
+
+- `http://localhost:5173/mock/login` 登录（`admin / admin123`）
+- 工作台、测试任务列表（筛选/分页）、新增任务弹窗、下拉/日期/上传、编辑、删除确认、任务详情
+- `http://localhost:5173/mock/reset` 重置演示数据（每条用例第一步访问它即可独立可重复）
+
+对应示例用例在 `examples/mock-project/`（4 条：登录工作台 / 新增任务全流程 / 筛选与详情 / 编辑与删除），
+失败场景示例在 `examples/mock-project-negative/`。
 
 ## 用例文件
 

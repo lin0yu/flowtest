@@ -419,6 +419,16 @@ async function execStep(state, step, ctx) {
     case 'wait':
       await sleep(Math.max(0, Number(value) || 0))
       return `已等待 ${value} 毫秒`
+    case 'waitText': {
+      const deadline = Date.now() + t
+      let bodyText = ''
+      while (Date.now() < deadline) {
+        bodyText = await page.evaluate(() => document.body ? document.body.innerText : '').catch(() => '')
+        if (bodyText.includes(value)) return `页面文本已包含 ${value}`
+        await sleep(200)
+      }
+      throw assertError(`页面文本在超时时间内未包含「${value}」`, value, String(bodyText).slice(0, 300))
+    }
     case 'waitFor': {
       const { locator } = await locate()
       if (value === 'hidden') {

@@ -144,7 +144,7 @@ const COMPILE_SYSTEM = `你是资深 Web 自动化测试工程师，负责把中
 }
 
 可用 action：
-goto click fill press select selectDropdown pickDate hoverClick check uncheck scroll wait waitFor
+goto click fill press select selectDropdown pickDate hoverClick check uncheck scroll wait waitFor waitText
 upload download dblclick drag iframe switchFrame switchTab newTab closeTab refresh goBack goForward
 extract screenshot
 assertText assertTitle assertUrl assertVisible assertHidden assertValue assertCount assertAttribute

@@ -49,9 +49,21 @@ function buildLocator(root, candidate) {
   if (rowCol) return null // 需要异步求列索引，由 resolveRowColumn 单独处理
 
   if (candidate.startsWith('text=')) return root.getByText(candidate.slice(5).trim())
-  if (candidate.startsWith('placeholder=')) return root.getByPlaceholder(candidate.slice('placeholder='.length).trim())
-  if (candidate.startsWith('aria=')) return root.locator(`[aria-label*=${cssQuote(candidate.slice(5).trim())}]`)
-  if (candidate.startsWith('title=')) return root.locator(`[title*=${cssQuote(candidate.slice(6).trim())}]`)
+  // 属性类定位默认精确匹配（避免「请输入任务名称」误命中「请输入任务名称或型号」）
+  if (candidate.startsWith('placeholder=')) {
+    const v = candidate.slice('placeholder='.length).trim()
+    return root.locator(
+      `input[placeholder=${cssQuote(v)}], textarea[placeholder=${cssQuote(v)}], [aria-label=${cssQuote(v)}]`
+    )
+  }
+  if (candidate.startsWith('placeholder*=')) {
+    const v = candidate.slice('placeholder*='.length).trim()
+    return root.locator(`[placeholder*=${cssQuote(v)}], [aria-label*=${cssQuote(v)}]`)
+  }
+  if (candidate.startsWith('aria=')) return root.locator(`[aria-label=${cssQuote(candidate.slice(5).trim())}]`)
+  if (candidate.startsWith('aria*=')) return root.locator(`[aria-label*=${cssQuote(candidate.slice(6).trim())}]`)
+  if (candidate.startsWith('title=')) return root.locator(`[title=${cssQuote(candidate.slice(6).trim())}]`)
+  if (candidate.startsWith('title*=')) return root.locator(`[title*=${cssQuote(candidate.slice(7).trim())}]`)
   if (candidate.startsWith('data-testid=')) return root.locator(`[data-testid=${cssQuote(candidate.slice('data-testid='.length).trim())}]`).first()
   if (candidate.startsWith('id=')) return root.locator(`#${candidate.slice(3).trim()}`).first()
   if (candidate.startsWith('name=')) return root.locator(`[name=${cssQuote(candidate.slice(5).trim())}]`).first()

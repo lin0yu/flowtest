@@ -17,6 +17,7 @@ export const ACTION_LABELS = {
   scroll: '滚动',
   wait: '等待',
   waitFor: '等待元素',
+  waitText: '等待页面文本',
   upload: '上传文件',
   download: '下载',
   dblclick: '双击',
@@ -52,7 +53,7 @@ export const NEEDS_SELECTOR = new Set([
 ])
 
 export const NEEDS_VALUE = new Set([
-  'goto', 'fill', 'press', 'select', 'selectDropdown', 'pickDate', 'hoverClick', 'assertDropdownContains',
+  'goto', 'fill', 'press', 'select', 'waitText', 'selectDropdown', 'pickDate', 'hoverClick', 'assertDropdownContains',
   'wait', 'upload', 'download', 'drag',
   'switchTab', 'newTab', 'extract',
   'assertText', 'assertTitle', 'assertUrl', 'assertValue', 'assertCount', 'assertAttribute', 'assertNetwork'
@@ -88,15 +89,16 @@ function matchLine(line) {
   m = line.match(/^断言元素\s*(.+?)\s*(?:的)?数量\s*(?:为|是|等于|不少于|不小于|>=|>=)?\s*(\d+)\s*(?:以上|及以上)?$/)
   if (m) return { action: 'assertCount', selector: m[1].trim(), value: m[2].trim() }
 
+  // 表格行列断言（必须早于通用 assertValue 规则）
+  m = line.match(/^断言元素\s*表格行\s*(.+?)\s*的\s*(.+?)\s*列\s*(?:的)?(?:值|文本)\s*(?:包含|为|是)\s*[:：]?\s*(.+)$/)
+  if (m) return { action: 'assertValue', selector: `row=${m[1].trim()} | col=${m[2].trim()}`, value: m[3].trim() }
+
   m = line.match(/^断言元素\s*(.+?)\s*(?:的)?(?:值|文本|内容)\s*(?:应|需要|必须)?\s*(?:包含|为|是|等于)\s*[:：]?\s*(.+)$/)
   if (m) return { action: 'assertValue', selector: m[1].trim(), value: m[2].trim() }
 
   // ===== 表格行列 =====
   m = line.match(/^(?:点击|单击|双击|按下)\s*表格行\s*(.+?)\s*的\s*(.+?)\s*(?:按钮|链接|操作)?$/)
   if (m) return { action: 'click', selector: `row=${m[1].trim()} | text=${m[2].trim()}`, value: null }
-
-  m = line.match(/^断言元素\s*表格行\s*(.+?)\s*的\s*(.+?)\s*列\s*(?:的)?(?:值|文本)\s*(?:包含|为|是)\s*[:：]?\s*(.+)$/)
-  if (m) return { action: 'assertValue', selector: `row=${m[1].trim()} | col=${m[2].trim()}`, value: m[3].trim() }
 
   // ===== 浏览器/页面结构 =====
   m = line.match(/^(?:切换到|进入)\s*iframe\s*(.+)$/i)
@@ -138,13 +140,20 @@ function matchLine(line) {
     return { action: 'wait', selector: null, value: String(Math.round(ms)) }
   }
 
+  m = line.match(/^等待(?:页面)?文本(?:包含|出现)\s*(.+)$/)
+  if (m) return { action: 'waitText', selector: null, value: m[1].trim() }
+
   m = line.match(/^(?:等待|等)\s*(?:元素)?\s*(.+?)\s*(?:出现|可见|显示|消失|隐藏|不存在)$/)
   if (m) {
     const state = /(消失|隐藏|不存在)$/.test(line) ? 'hidden' : 'visible'
     return { action: 'waitFor', selector: m[1].trim(), value: state }
   }
 
-  m = line.match(/^在\s*(.+?)\s*(?:输入|填写|键入)\s*(.+)$/)
+  // 注意：选择器本身可能含「输入」二字（如 placeholder=请输入用户名），
+  // 因此先按「无空格选择器」匹配，再退回贪婪匹配（取最后一个动作词）。
+  m = line.match(/^在\s*(\S+)\s*(?:输入|填写|键入)\s*(.+)$/)
+  if (m) return { action: 'fill', selector: m[1].trim(), value: m[2].trim() }
+  m = line.match(/^在\s*(.+)\s*(?:输入|填写|键入)\s*(.+)$/)
   if (m) return { action: 'fill', selector: m[1].trim(), value: m[2].trim() }
 
   // ===== Element Plus 复合组件（必须早于通用 select 规则）=====
@@ -253,6 +262,7 @@ export function renderStepsToNl(steps) {
       case 'scroll': return `滚动到 ${sel}`
       case 'wait': return `等待 ${Number(val) / 1000} 秒`
       case 'waitFor': return `等待元素 ${sel} ${val === 'hidden' ? '消失' : '出现'}`
+      case 'waitText': return `等待页面文本包含 ${val}`
       case 'upload': return `上传 ${sel} ${val}`
       case 'download': return `下载 ${sel}`
       case 'drag': return `拖拽 ${sel} 到 ${val}`
