@@ -1,3 +1,5 @@
+# @title 登录流程
+# @tags smoke,login
 打开 /demo/index.html
 在 #username 输入 ${demoUser}
 在 #password 输入 ${demoPassword}

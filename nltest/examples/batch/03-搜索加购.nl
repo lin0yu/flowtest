@@ -1,3 +1,5 @@
+# @title 搜索并加购
+# @tags regression,cart
 打开 /demo/index.html
 在 #username 输入 ${demoUser}
 在 #password 输入 ${demoPassword}

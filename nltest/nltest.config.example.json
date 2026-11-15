@@ -1,0 +1,43 @@
+{
+  "app": {
+    "baseUrl": "https://your-app.example.com"
+  },
+  "llm": {
+    "enabled": false,
+    "baseUrl": "https://api.openai.com/v1",
+    "model": "gpt-4o-mini",
+    "apiKey": "",
+    "timeoutMs": 60000,
+    "temperature": 0.2,
+    "maxTokens": 4000,
+    "retry": 1,
+    "headers": {}
+  },
+  "browser": {
+    "channel": "chrome",
+    "headless": true,
+    "viewport": { "width": 1440, "height": 960 },
+    "slowMo": 0,
+    "ignoreHttpsErrors": false,
+    "acceptDownloads": true,
+    "args": []
+  },
+  "runner": {
+    "timeoutSeconds": 10,
+    "navigationTimeoutSeconds": 30,
+    "stepRetries": 0,
+    "retryBackoffMs": 500,
+    "failFast": false
+  },
+  "report": {
+    "dir": "reports",
+    "formats": ["html", "json", "md"],
+    "inline": false,
+    "screenshot": "each-step",
+    "redact": ["password", "pwd", "passwd", "token", "secret", "apikey"]
+  },
+  "vars": {
+    "username": "test_user",
+    "password": "change-me"
+  }
+}
