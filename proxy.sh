@@ -174,7 +174,7 @@ cmd_push() {
     direct_code="${direct_code:-000}"
     if [ "$direct_code" = "200" ]; then
       echo "→ [第${round}轮] 直连可用，使用直连推送…"
-      if git -C "$ROOT" -c http.proxy= -c https.proxy= push "$auth_url" "$branch"; then
+      if git -C "$ROOT" -c http.proxy= -c https.proxy= -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=20 push "$auth_url" "$branch"; then
         git -C "$ROOT" fetch "$remote" >/dev/null 2>&1 || true
         echo "✓ 推送完成"
         return 0
@@ -187,7 +187,7 @@ cmd_push() {
       proxy_code="${proxy_code:-000}"
       if [ "$proxy_code" = "200" ]; then
         echo "→ [第${round}轮] 直连不通，改用代理 $url 推送…"
-        if git -C "$ROOT" -c http.proxy="$url" -c https.proxy="$url" push "$auth_url" "$branch"; then
+        if git -C "$ROOT" -c http.proxy="$url" -c https.proxy="$url" -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=20 push "$auth_url" "$branch"; then
           git -C "$ROOT" fetch "$remote" >/dev/null 2>&1 || true
           echo "✓ 推送完成"
           return 0
